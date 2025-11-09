@@ -1,0 +1,216 @@
+/* Draftly Design Tokens */
+:root {
+  /* Brand */
+  --dl-color-bg: #ffffff;
+  --dl-color-surface: #ffffff;
+  --dl-color-text: rgba(0,0,0,0.84);
+  --dl-color-text-muted: rgba(0,0,0,0.56);
+  --dl-color-border: rgba(0,0,0,0.2);
+  --dl-color-primary: #1a7fdb; /* Draftly blue (distinct from Medium green) */
+  --dl-color-primary-strong: #1261a8;
+  --dl-color-accent: #1a8917; /* optional accent for links */
+  --dl-color-danger-bg: #fff2f2;
+  --dl-color-danger-text: #c94c4c;
+
+  /* Typography */
+  --dl-font-sans: sohne, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --dl-font-serif: "Source Serif 4", Georgia, Cambria, "Times New Roman", Times, serif;
+  --dl-font-size-xl: 28px;
+  --dl-font-size-m: 16px;
+  --dl-line-height-xl: 32px;
+  --dl-radius-pill: 999px;
+  --dl-radius-sm: 3px;
+  --dl-space-1: 8px;
+  --dl-space-2: 16px;
+  --dl-space-3: 24px;
+  --dl-space-4: 32px;
+  --dl-space-6: 64px;
+}
+
+.auth-page {
+  min-height: 100vh;
+  background-color: var(--dl-color-bg);
+  font-family: var(--dl-font-sans);
+}
+
+.auth-main {
+  margin: 0 auto;
+  max-width: 1192px;
+  min-height: 100vh;
+  padding: 0 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-container {
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+  -webkit-box-pack: center;
+  justify-content: center;
+  padding: 80px 0px;
+  text-align: center;
+}
+
+.auth-logo {
+  margin-bottom: 25px;
+}
+
+.auth-logo svg {
+  width: 82px;
+  height: auto;
+  fill: rgb(41, 41, 41);
+}
+
+.auth-container h1 {
+  color: var(--dl-color-text);
+  font-family: var(--dl-font-serif);
+  font-size: var(--dl-font-size-xl);
+  font-weight: 500;
+  line-height: var(--dl-line-height-xl);
+  letter-spacing: -0.012em;
+  margin-bottom: var(--dl-space-4);
+}
+
+.auth-content {
+  max-width: 416px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.auth-form {
+  margin-bottom: 32px;
+}
+
+.input-wrapper {
+  margin-bottom: 8px;
+}
+
+.auth-form input {
+  font-size: var(--dl-font-size-m);
+  line-height: 20px;
+  padding: 10px 14px;
+  width: 100%;
+  border: 1px solid var(--dl-color-border);
+  border-radius: var(--dl-radius-sm);
+  outline: none;
+  color: var(--dl-color-text);
+  background: var(--dl-color-surface);
+}
+
+.auth-form input:focus {
+  border-color: var(--dl-color-text);
+}
+
+.auth-form input::placeholder {
+  color: var(--dl-color-text-muted);
+}
+
+.auth-button {
+  background: var(--dl-color-primary);
+  border: 1px solid var(--dl-color-primary);
+  border-radius: var(--dl-radius-pill);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 18px;
+  text-decoration: none;
+  width: 100%;
+  cursor: pointer;
+  margin-top: var(--dl-space-2);
+}
+
+.auth-button:hover {
+  background: var(--dl-color-primary-strong);
+  border-color: var(--dl-color-primary-strong);
+}
+
+.auth-button.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  background: var(--dl-color-danger-bg);
+  color: var(--dl-color-danger-text);
+  padding: var(--dl-space-2);
+  font-size: 14px;
+  margin-bottom: var(--dl-space-2);
+  text-align: left;
+  border-radius: var(--dl-radius-sm);
+}
+
+.auth-success {
+  background: #f0fbf3;
+  color: #1b7f4a;
+  padding: var(--dl-space-2);
+  font-size: 14px;
+  margin-bottom: var(--dl-space-2);
+  text-align: left;
+  border-radius: var(--dl-radius-sm);
+}
+
+.auth-footer {
+  color: var(--dl-color-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-footer p {
+  margin-bottom: 16px;
+}
+
+.auth-footer a {
+  color: var(--dl-color-accent);
+  text-decoration: none;
+}
+
+.auth-footer a:hover {
+  color: rgb(17, 97, 15);
+  text-decoration: underline;
+}
+
+.forgot-password {
+  font-size: 13px;
+}
+
+@media screen and (max-width: 768px) {
+  .auth-main {
+    padding: 0 32px;
+  }
+  
+  .auth-container {
+    padding: 40px 0;
+  }
+}
+
+/* Medium's logo styles */
+.auth-logo {
+  margin-bottom: 64px;
+}
+
+.auth-logo svg {
+  width: 82px;
+  height: auto;
+}
+
+/* Error message styles */
+.auth-error {
+  color: #c94c4c;
+  font-size: 14px;
+  margin-top: 8px;
+  text-align: left;
+}
+
+/* Input wrapper for better spacing */
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Loading state for button */
+.auth-button.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

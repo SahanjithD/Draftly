@@ -1,0 +1,45 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      HOST: "0.0.0.0"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm start
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override MONGODB_URI to use local Mongo container in Compose
+      # Comment this out if you want to use Atlas from .env instead
+      MONGODB_URI: mongodb+srv://draftly_db:Ahcf8MhHUfBLRdjj@draftly.vwr5bnz.mongodb.net/?retryWrites=true&w=majority&appName=Draftly
+      PORT: 5000
+      NODE_ENV: production
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
