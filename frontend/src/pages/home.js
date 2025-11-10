@@ -34,63 +34,43 @@ const HomePage = () => {
     };
   }, [dropdownOpen]);
 
-  // Sample featured posts (replace with real API data later)
-  const featuredPosts = [
-    {
-      id: 1,
-      title: "Getting Started with Modern Web Development",
-      excerpt: "Learn the fundamentals of building scalable web applications with React, Node.js, and MongoDB.",
-      author: "Jane Cooper",
-      date: "Nov 8, 2025",
-      readTime: "5 min read",
-      image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=400&fit=crop"
-    },
-    {
-      id: 2,
-      title: "The Art of Clean Code",
-      excerpt: "Discover principles and practices that will help you write maintainable, readable code that stands the test of time.",
-      author: "Alex Morgan",
-      date: "Nov 7, 2025",
-      readTime: "8 min read",
-      image: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=800&h=400&fit=crop"
-    },
-    {
-      id: 3,
-      title: "Mastering Docker and Containerization",
-      excerpt: "A comprehensive guide to containerizing your applications and orchestrating them in production environments.",
-      author: "Sam Rivera",
-      date: "Nov 6, 2025",
-      readTime: "12 min read",
-      image: "https://images.unsplash.com/photo-1605745341112-85968b19335b?w=800&h=400&fit=crop"
-    },
-    {
-      id: 4,
-      title: "Building RESTful APIs with Express",
-      excerpt: "Step-by-step tutorial on creating robust and scalable REST APIs using Node.js and Express framework.",
-      author: "Jordan Lee",
-      date: "Nov 5, 2025",
-      readTime: "10 min read",
-      image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=400&fit=crop"
-    },
-    {
-      id: 5,
-      title: "React Hooks: A Deep Dive",
-      excerpt: "Explore the power of React Hooks and learn how to build more efficient and elegant components.",
-      author: "Chris Taylor",
-      date: "Nov 4, 2025",
-      readTime: "7 min read",
-      image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=400&fit=crop"
-    },
-    {
-      id: 6,
-      title: "Database Design Best Practices",
-      excerpt: "Learn how to design efficient database schemas and optimize queries for better performance.",
-      author: "Morgan Blake",
-      date: "Nov 3, 2025",
-      readTime: "9 min read",
-      image: "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800&h=400&fit=crop"
-    }
-  ];
+  // Fetch posts from API
+  const [featuredPosts, setFeaturedPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch('/api/posts?limit=6');
+        const data = await response.json();
+        
+        // Transform API posts to match the expected format
+        const transformedPosts = data.posts.map(post => ({
+          id: post._id,
+          title: post.title,
+          excerpt: post.content.substring(0, 150) + '...',
+          author: post.author?.username || 'Anonymous',
+          date: new Date(post.createdAt).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          }),
+          readTime: `${Math.ceil(post.content.split(' ').length / 200)} min read`,
+          image: post.coverImage || `https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=400&fit=crop`
+        }));
+        
+        setFeaturedPosts(transformedPosts);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        // Fallback to empty array if fetch fails
+        setFeaturedPosts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   return (
     <div className="home-page">
@@ -113,7 +93,7 @@ const HomePage = () => {
           <div className="home-nav-actions">
             {token ? (
               <>
-                <button className="home-nav-btn home-nav-btn-write">Write</button>
+                <button className="home-nav-btn home-nav-btn-write" onClick={() => navigate('/write')}>Write</button>
                 <div className="home-profile-wrapper" ref={dropdownRef}>
                   <button className="home-profile-btn" onClick={toggleDropdown}>
                     <div className="home-profile-avatar">
@@ -176,9 +156,23 @@ const HomePage = () => {
       <section className="home-posts">
         <div className="home-posts-container">
           <h2 className="home-posts-title">Featured stories</h2>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+              Loading stories...
+            </div>
+          ) : featuredPosts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+              No stories yet. Be the first to write one!
+            </div>
+          ) : (
           <div className="home-posts-grid">
             {featuredPosts.map(post => (
-              <article key={post.id} className="home-post-card">
+              <article 
+                key={post.id} 
+                className="home-post-card"
+                onClick={() => navigate(`/story/${post.id}`)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="home-post-image">
                   <img src={post.image} alt={post.title} />
                 </div>
@@ -196,6 +190,7 @@ const HomePage = () => {
               </article>
             ))}
           </div>
+          )}
         </div>
       </section>
 

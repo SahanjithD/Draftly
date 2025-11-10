@@ -37,8 +37,7 @@ const RegisterPage = () => {
       if (response.ok) {
         setSuccess(data.message || 'Account created successfully');
         localStorage.setItem('token', data.token);
-        //navigate('/');
-        
+        navigate('/home');
       } else {
         setError(data.message || `Registration failed (HTTP ${response.status})`);
       }
