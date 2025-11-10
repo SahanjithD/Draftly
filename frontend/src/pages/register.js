@@ -43,7 +43,7 @@ const RegisterPage = () => {
         setError(data.message || `Registration failed (HTTP ${response.status})`);
       }
     } catch (err) {
-      setError(err?.message || 'Network error. Please check your connection. ');
+      setError(err?.message || 'Network error. Please check your connection.');
     } finally {
       setIsLoading(false);
     }
