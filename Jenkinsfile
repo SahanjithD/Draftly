@@ -51,11 +51,18 @@ pipeline {
             }
         }
 
-        stage('Deploy to Production') {
-            steps {
-                sh 'docker-compose -f docker-compose.yml up -d'
+        stage('Deploy to App Server') {
+        steps {
+            sh '''
+            ssh -i /home/admin/.ssh/app-server.pem -o StrictHostKeyChecking=no admin@54.92.205.45 "
+                cd draftly &&
+                docker compose pull &&
+                docker compose up -d --force-recreate
+            "
+            '''
             }
         }
+
         
 
         stage('Clean up') {
