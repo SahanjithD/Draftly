@@ -43,6 +43,13 @@ pipeline {
             }
         }
 
+        stage('Deploy to Production') {
+            steps {
+                sh 'docker-compose -f docker-compose.yml up -d'
+            }
+        }
+        
+
         stage('Clean up') {
             steps {
                 sh 'docker image prune -f'
