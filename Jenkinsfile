@@ -43,6 +43,14 @@ pipeline {
             }
         }
 
+        stage('Create Backend .env File') {
+            steps {
+                withCredentials([file(credentialsId: 'backend-env-file', variable: 'ENV_FILE')]) {
+                    sh 'cat $ENV_FILE > ./backend/.env'
+                }
+            }
+        }
+
         stage('Deploy to Production') {
             steps {
                 sh 'docker-compose -f docker-compose.yml up -d'
