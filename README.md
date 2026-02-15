@@ -101,6 +101,94 @@ Draftly/
 └── Jenkinsfile             # CI/CD Pipeline definition
 ```
 
+## ☁️ AWS Deployment Architecture
+
+This project uses a dedicated AWS infrastructure for CI/CD and production deployment.
+
+```mermaid
+graph TD
+    subgraph Local_Environment
+        Dev[Developer]
+        LocalBrowser[Browser]
+    end
+
+    subgraph Source_Control
+        GitHub["GitHub Repository - main branch"]
+    end
+
+    subgraph AWS_Cloud
+
+        subgraph CICD_Server_EC2
+            Jenkins[Jenkins Server]
+        end
+
+        subgraph Registry
+            DockerHub[(Docker Hub)]
+        end
+
+        subgraph Deployment_Server_EC2
+            DockerCompose[Docker Compose]
+
+            subgraph Containers
+                Frontend["Frontend Container - React :3000"]
+                Backend["Backend Container - Node/Express :5000"]
+            end
+
+            EnvFile[".env File"]
+        end
+
+        Database[(MongoDB Atlas)]
+    end
+
+    Dev --> GitHub
+    GitHub --> Jenkins
+
+    Jenkins -- Build & Push --> DockerHub
+    Jenkins -- SSH Deploy --> DockerCompose
+
+    DockerCompose -- Pull Images --> DockerHub
+    DockerCompose -- Start --> Frontend
+    DockerCompose -- Start --> Backend
+
+    Frontend --> Backend
+    Backend --> Database
+    Backend --> EnvFile
+```
+
+### 1. Infrastructure Overview
+-   **Jenkins Server**: An EC2 instance dedicated to running the CI/CD pipeline.
+-   **Deployment Server**: An EC2 instance that hosts the live application using Docker Compose.
+
+### 2. Server Access
+SSH private keys (`.pem` files) for accessing these servers are stored locally at:
+`C:\Users\ASUS\.ssh`
+
+To access the servers via SSH:
+```bash
+ssh -i "C:\Users\ASUS\.ssh\your-key-name.pem" admin@<SERVER_PUBLIC_IP>
+```
+
+### 3. Deployment Server Configuration
+The deployment server is configured with a `docker-compose.yml` file located at `~/draftly/docker-compose.yml`.
+
+**File Content:**
+```yaml
+version: "3.9"
+
+services:
+  backend:
+    image: dasund3sh4j4/draftly-backend:${IMAGE_TAG}
+    env_file: .env
+    ports:
+      - "5000:5000"
+
+  frontend:
+    image: dasund3sh4j4/draftly-frontend:${IMAGE_TAG}
+    ports:
+      - "3000:3000"
+```
+*Note: The `${IMAGE_TAG}` variable is populated during the deployment process to ensure the correct version is deployed.*
+
 ## 🔄 CI/CD Pipeline
 
 The project includes a `Jenkinsfile` that defines the CI/CD pipeline. The pipeline includes stages for:
@@ -109,18 +197,22 @@ The project includes a `Jenkinsfile` that defines the CI/CD pipeline. The pipeli
 3.  Pushing images to Docker Hub.
 4.  Cleaning up artifacts.
 
-### 1. Running Jenkins
-To run Jenkins locally using Docker:
+### 1. Accessing Jenkins
+Jenkins is hosted on a dedicated AWS EC2 instance.
 
-```bash
-docker run -p 8080:8080 -p 50000:50000 --restart=on-failure -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts-jdk17
-```
-
-### 2. Accessing Jenkins
-1.  Open your browser and navigate to [http://localhost:8080](http://localhost:8080).
-    > **Note for WSL Users**: If `localhost` does not work, you may need to use the IP address of your WSL instance. Run `wsl hostname -I` in PowerShell to find it (e.g., `http://172.x.x.x:8080`).
-2.  Retrieve the initial administrator password from the Docker terminal logs or from `<jenkins_home>/secrets/initialAdminPassword` inside the container.
-3.  Install the suggested plugins and create an admin user.
+1.  **URL**: Navigate to `http://<JENKINS_SERVER_PUBLIC_IP>:8080` in your browser.
+2.  **Initial Setup**:
+    -   Connect to the server via SSH:
+        ```bash
+        ssh -i "path\to\your-key.pem" admin@<JENKINS_SERVER_IP>
+        ```
+    -   Retrieve the initial administrator password:
+        ```bash
+        sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+        # Or if running in Docker:
+        docker exec jenkins-container-name cat /var/jenkins_home/secrets/initialAdminPassword
+        ```
+3.  **Completion**: Enter the password in the web UI, install suggested plugins, and create an admin user.
 
 ### 3. Setting Up the Pipeline
 1.  **Create a Job**: Click "New Item", enter a name (e.g., "Draftly-Pipeline"), select **Pipeline**, and click OK.
