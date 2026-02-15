@@ -142,7 +142,7 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="home-hero">
         <div className="home-hero-container">
-          <h1 className="home-hero-title">Stay curious.</h1>
+          <h1 className="home-hero-title">Dasun Deshaja</h1>
           <p className="home-hero-subtitle">
             Discover stories, thinking, and expertise from writers on any topic.
           </p>
