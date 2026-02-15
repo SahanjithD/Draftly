@@ -15,6 +15,12 @@
         dest: ~/draftly/docker-compose.yml
         mode: '0644'
 
+    - name: Copy backend .env file
+      copy:
+        src: ./backend/.env
+        dest: ~/draftly/backend/.env
+        mode: '0644'
+
     - name: Pull latest backend and frontend images
       shell: |
         docker compose -f ~/draftly/docker-compose.yml pull
