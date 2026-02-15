@@ -56,10 +56,16 @@ pipeline {
             }
         }
 
-        stage('Deploy via Ansible') {
+        stage('Deploy to App Server') {
             steps {
                 sh """
-                ansible-playbook -i hosts.ini deploy.yml --extra-vars "IMAGE_TAG=${BUILD_NUMBER}"
+                ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${APP_SERVER} '
+                    export IMAGE_TAG=${IMAGE_TAG}
+                    cd draftly &&
+                    docker compose pull &&
+                    docker compose up -d --force-recreate &&
+                    docker image prune -f
+                '
                 """
             }
         }
