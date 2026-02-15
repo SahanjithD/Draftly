@@ -1,0 +1,35 @@
+---
+- name: Deploy Draftly App
+  hosts: app_servers
+  become: yes
+  tasks:
+
+    - name: Ensure draftly folder exists
+      file:
+        path: ~/draftly
+        state: directory
+
+    - name: Copy Docker Compose file
+      copy:
+        src: docker-compose.yml
+        dest: ~/draftly/docker-compose.yml
+        mode: '0644'
+
+    - name: Pull latest backend and frontend images
+      shell: |
+        docker compose -f ~/draftly/docker-compose.yml pull
+      args:
+        warn: false
+
+    - name: Deploy containers
+      shell: |
+        docker compose -f ~/draftly/docker-compose.yml up -d --force-recreate
+      environment:
+        IMAGE_TAG: "{{ IMAGE_TAG }}"
+      args:
+        warn: false
+
+    - name: Clean up dangling images
+      shell: docker image prune -f
+      args:
+        warn: false
