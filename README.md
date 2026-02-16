@@ -195,7 +195,8 @@ The project includes a `Jenkinsfile` that defines the CI/CD pipeline. The pipeli
 1.  Cloning the repository.
 2.  Building Docker images for Frontend and Backend.
 3.  Pushing images to Docker Hub.
-4.  Cleaning up artifacts.
+4.  Deploying to the App Server.
+5.  Cleaning up Jenkins images.
 
 ### 1. Accessing Jenkins
 Jenkins is hosted on a dedicated AWS EC2 instance.
