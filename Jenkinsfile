@@ -5,7 +5,7 @@ pipeline {
         DOCKER_HUB_REPO_FRONTEND = "dasund3sh4j4/draftly-frontend"
         DOCKER_HUB_REPO_BACKEND  = "dasund3sh4j4/draftly-backend"
         IMAGE_TAG = "${BUILD_NUMBER}"
-        APP_SERVER = "admin@54.92.205.45"
+        APP_SERVER = "admin@54.211.17.147"
         SSH_KEY = "/var/lib/jenkins/.ssh/app-server.pem"
     }
 
