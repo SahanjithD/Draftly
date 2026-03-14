@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import '../styles/write.css';
 
 const WritePage = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
   const token = localStorage.getItem('token');
   const [formData, setFormData] = useState({
     title: '',
@@ -11,6 +13,7 @@ const WritePage = () => {
     coverImage: ''
   });
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoadingPost, setIsLoadingPost] = useState(isEditMode);
   const [error, setError] = useState('');
 
   // Redirect if not logged in
@@ -19,6 +22,43 @@ const WritePage = () => {
       navigate('/login');
     }
   }, [token, navigate]);
+
+  React.useEffect(() => {
+    const fetchPostForEdit = async () => {
+      if (!isEditMode) {
+        setIsLoadingPost(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/posts/${id}`);
+        const text = await response.text();
+        let data = {};
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { message: text || 'Invalid server response' };
+        }
+
+        if (!response.ok) {
+          setError(data.message || 'Failed to load story for editing');
+          return;
+        }
+
+        setFormData({
+          title: data.post?.title || '',
+          content: data.post?.content || '',
+          coverImage: data.post?.coverImage || ''
+        });
+      } catch (fetchError) {
+        setError(fetchError?.message || 'Network error. Please check your connection.');
+      } finally {
+        setIsLoadingPost(false);
+      }
+    };
+
+    fetchPostForEdit();
+  }, [id, isEditMode]);
 
   const handlePublish = async (e) => {
     e.preventDefault();
@@ -32,8 +72,11 @@ const WritePage = () => {
     }
 
     try {
-      const response = await fetch('/api/posts', {
-        method: 'POST',
+      const endpoint = isEditMode ? `/api/posts/${id}` : '/api/posts';
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -54,10 +97,11 @@ const WritePage = () => {
       }
 
       if (response.ok) {
-        // Redirect to the new post or home
-        navigate('/home');
+        const postId = data.post?._id;
+        navigate(postId ? `/story/${postId}` : '/profile');
       } else {
-        setError(data.message || `Publish failed (HTTP ${response.status})`);
+        const actionLabel = isEditMode ? 'Update' : 'Publish';
+        setError(data.message || `${actionLabel} failed (HTTP ${response.status})`);
       }
     } catch (error) {
       setError(error?.message || 'Network error. Please check your connection.');
@@ -69,12 +113,24 @@ const WritePage = () => {
   const handleCancel = () => {
     if (formData.title || formData.content) {
       if (window.confirm('Discard draft?')) {
-        navigate('/home');
+        navigate('/profile');
       }
     } else {
-      navigate('/home');
+      navigate('/profile');
     }
   };
+
+  if (isLoadingPost) {
+    return (
+      <div className="write-page">
+        <main className="write-main">
+          <div className="write-container">
+            <p>Loading story...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="write-page">
@@ -92,7 +148,7 @@ const WritePage = () => {
               onClick={handlePublish}
               disabled={isPublishing}
             >
-              {isPublishing ? 'Publishing...' : 'Publish'}
+              {isPublishing ? (isEditMode ? 'Saving...' : 'Publishing...') : (isEditMode ? 'Save Changes' : 'Publish')}
             </button>
           </div>
         </div>
@@ -107,7 +163,7 @@ const WritePage = () => {
             <input
               type="text"
               className="write-title"
-              placeholder="Title"
+              placeholder={isEditMode ? 'Edit title' : 'Title'}
               value={formData.title}
               onChange={(e) => setFormData({...formData, title: e.target.value})}
               autoFocus
