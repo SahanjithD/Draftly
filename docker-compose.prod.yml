@@ -1,0 +1,18 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    image: dasund3sh4j4/draftly-backend:${IMAGE_TAG}
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: ./frontend
+    image: dasund3sh4j4/draftly-frontend:${IMAGE_TAG}
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

@@ -22,6 +22,7 @@ Draftly is a full-stack blogging application built using the MERN stack (MongoDB
 Before you begin, ensure you have the following installed:
 -   [Docker](https://www.docker.com/products/docker-desktop) & [Docker Compose](https://docs.docker.com/compose/install/)
 -   [Node.js](https://nodejs.org/) (if running locally without Docker)
+-   Ubuntu on WSL if you want to run the app from a Linux shell on Windows
 
 ## ⚡ Getting Started
 
@@ -35,20 +36,43 @@ The easiest way to run the application is using Docker Compose.
     cd Draftly
     ```
 
-2.  **Start the application (Development Mode)**
+2.  **Open Ubuntu in WSL and go to the project**
+    ```bash
+    wsl -d Ubuntu
+    cd /mnt/e/Projects/Draftly
+    ```
+
+3.  **Start the application (Development Mode)**
     This starts the frontend, backend, and MongoDB database with hot-reloading enabled.
     ```bash
-    docker-compose -f docker-compose.dev.yml up --build
+    docker compose -f docker-compose.dev.yml up --build
     ```
 
-3.  **Start the application (Production Mode)**
+4.  **Start the application (Production-Style Mode)**
+    This builds the frontend and backend images, then runs them together using the production compose file.
     ```bash
-    docker-compose up --build
+    IMAGE_TAG=localtest docker compose -f docker-compose.prod.yml -p draftlyprod up --build
     ```
 
-4.  **Access the application**
-    -   Frontend: [http://localhost:3000](http://localhost:3000)
+5.  **Access the application**
+    -   Development frontend: [http://localhost:3000](http://localhost:3000)
+    -   Production-style frontend: [http://localhost](http://localhost)
     -   Backend API: [http://localhost:5000](http://localhost:5000)
+
+6.  **Stop the application**
+    ```bash
+    docker compose -f docker-compose.dev.yml down
+    ```
+
+    For the production-style stack:
+    ```bash
+    IMAGE_TAG=localtest docker compose -f docker-compose.prod.yml -p draftlyprod down
+    ```
+
+    If you previously ran a standalone frontend test container, remove it separately:
+    ```bash
+    docker rm -f draftly-frontend-nginx-test
+    ```
 
 ### Option 2: Manual Setup
 
@@ -96,8 +120,9 @@ Draftly/
 ├── frontend/               # React Application
 │   ├── public/             # Static assets
 │   └── src/                # React components and pages
-├── docker-compose.yml      # Production composition
-├── docker-compose.dev.yml  # Development composition
+├── docker-compose.yml      # Local Docker composition
+├── docker-compose.dev.yml  # Development composition with hot reload
+├── docker-compose.prod.yml # Production-style composition
 └── Jenkinsfile             # CI/CD Pipeline definition
 ```
 
@@ -130,7 +155,7 @@ graph TD
             DockerCompose[Docker Compose]
 
             subgraph Containers
-                Frontend["Frontend Container - React :3000"]
+                Frontend["Frontend Container - Nginx :80"]
                 Backend["Backend Container - Node/Express :5000"]
             end
 
@@ -185,7 +210,7 @@ services:
   frontend:
     image: dasund3sh4j4/draftly-frontend:${IMAGE_TAG}
     ports:
-      - "3000:3000"
+            - "80:80"
 ```
 *Note: The `${IMAGE_TAG}` variable is populated during the deployment process to ensure the correct version is deployed.*
 
