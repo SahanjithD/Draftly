@@ -5,8 +5,6 @@ pipeline {
         DOCKER_HUB_REPO_FRONTEND = "dasund3sh4j4/draftly-frontend"
         DOCKER_HUB_REPO_BACKEND  = "dasund3sh4j4/draftly-backend"
         IMAGE_TAG = "${BUILD_NUMBER}"
-        APP_SERVER = "admin@54.211.17.147"
-        SSH_KEY = "/var/lib/jenkins/.ssh/app-server.pem"
     }
 
     stages {
@@ -58,15 +56,7 @@ pipeline {
 
         stage('Deploy to App Server') {
             steps {
-                sh """
-                ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${APP_SERVER} '
-                    export IMAGE_TAG=${IMAGE_TAG}
-                    cd draftly &&
-                    docker compose pull &&
-                    docker compose up -d --force-recreate &&
-                    docker image prune -f
-                '
-                """
+                sh "ansible-playbook -i hosts.ini deploy.yml --extra-vars 'IMAGE_TAG=${IMAGE_TAG}'"
             }
         }
 
