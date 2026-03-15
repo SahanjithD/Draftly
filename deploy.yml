@@ -1,13 +1,15 @@
 - name: Deploy Draftly App
   hosts: app_servers
   become: yes
+  vars:
+    app_dir: /home/admin/draftly
   tasks:
 
     - name: Pull latest backend and frontend images
       shell: |
         docker compose pull
       args:
-        chdir: ~/draftly
+        chdir: "{{ app_dir }}"
       environment:
         IMAGE_TAG: "{{ IMAGE_TAG }}"
 
@@ -15,7 +17,7 @@
       shell: |
         docker compose up -d --force-recreate --no-build
       args:
-        chdir: ~/draftly
+        chdir: "{{ app_dir }}"
       environment:
         IMAGE_TAG: "{{ IMAGE_TAG }}"
 
