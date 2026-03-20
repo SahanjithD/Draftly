@@ -24,9 +24,9 @@
         force: yes
       become_user: ubuntu
 
-    - name: Create backend env file from Jenkins secret
+    - name: Create backend env file from Jenkins secret file
       copy:
-        content: "{{ lookup('env', 'BACKEND_ENV_CONTENT') | replace('\\r\\n', '\n') | replace('\\n', '\n') }}"
+        src: "{{ lookup('env', 'BACKEND_ENV_FILE') }}"
         dest: "{{ app_dir }}/backend/.env"
         owner: ubuntu
         group: ubuntu

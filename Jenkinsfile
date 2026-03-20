@@ -75,9 +75,9 @@ pipeline {
                         credentialsId: 'app-server-ssh-key',
                         keyFileVariable: 'SSH_KEY'
                     ),
-                    string(
+                    file(
                         credentialsId: 'backend-env-file',
-                        variable: 'BACKEND_ENV_CONTENT'
+                        variable: 'BACKEND_ENV_FILE'
                     )
                 ]) {
                     sh "ansible-playbook -i hosts.ini --private-key '${SSH_KEY}' deploy.yml --extra-vars 'IMAGE_TAG=${IMAGE_TAG}'"
