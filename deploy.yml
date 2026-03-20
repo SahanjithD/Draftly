@@ -3,11 +3,30 @@
   become: yes
   vars:
     app_dir: /home/ubuntu/draftly
+    repo_url: https://github.com/SahanjithD/Draftly.git
+    repo_branch: main
   tasks:
+
+    - name: Ensure app directory exists
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Sync application repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: "{{ repo_branch }}"
+        update: yes
+        force: yes
+      become_user: ubuntu
 
     - name: Pull latest backend and frontend images
       shell: |
-        docker compose pull
+        docker compose -f docker-compose.prod.yml pull
       args:
         chdir: "{{ app_dir }}"
       environment:
@@ -15,7 +34,7 @@
 
     - name: Deploy containers
       shell: |
-        docker compose up -d --force-recreate --no-build
+        docker compose -f docker-compose.prod.yml up -d --force-recreate --no-build
       args:
         chdir: "{{ app_dir }}"
       environment:
