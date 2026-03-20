@@ -24,6 +24,15 @@
         force: yes
       become_user: ubuntu
 
+    - name: Create backend env file from Jenkins secret
+      copy:
+        content: "{{ lookup('env', 'BACKEND_ENV_CONTENT') }}"
+        dest: "{{ app_dir }}/backend/.env"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+      no_log: true
+
     - name: Pull latest backend and frontend images
       shell: |
         docker compose -f docker-compose.prod.yml pull
