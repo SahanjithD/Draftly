@@ -2,7 +2,7 @@
   hosts: app_servers
   become: yes
   vars:
-    app_dir: /home/admin/draftly
+    app_dir: /home/ubuntu/draftly
   tasks:
 
     - name: Pull latest backend and frontend images
