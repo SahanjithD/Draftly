@@ -70,7 +70,14 @@ pipeline {
 
         stage('Deploy to App Server') {
             steps {
-                sh "ansible-playbook -i hosts.ini deploy.yml --extra-vars 'IMAGE_TAG=${IMAGE_TAG}'"
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'app-server-ssh-key',
+                        keyFileVariable: 'SSH_KEY'
+                    )
+                ]) {
+                    sh "ansible-playbook -i hosts.ini --private-key '${SSH_KEY}' deploy.yml --extra-vars 'IMAGE_TAG=${IMAGE_TAG}'"
+                }
             }
         }
 
