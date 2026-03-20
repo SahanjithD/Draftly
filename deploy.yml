@@ -26,12 +26,18 @@
 
     - name: Create backend env file from Jenkins secret
       copy:
-        content: "{{ lookup('env', 'BACKEND_ENV_CONTENT') }}"
+        content: "{{ lookup('env', 'BACKEND_ENV_CONTENT') | replace('\\r\\n', '\n') | replace('\\n', '\n') }}"
         dest: "{{ app_dir }}/backend/.env"
         owner: ubuntu
         group: ubuntu
         mode: "0600"
       no_log: true
+
+    - name: Validate required backend env keys
+      shell: |
+        grep -q '^PORT=' "{{ app_dir }}/backend/.env"
+        grep -q '^MONGODB_URI=' "{{ app_dir }}/backend/.env"
+        grep -q '^JWT_SECRET=' "{{ app_dir }}/backend/.env"
 
     - name: Pull latest backend and frontend images
       shell: |
