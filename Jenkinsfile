@@ -57,7 +57,7 @@ pipeline {
         stage('Prepare SSH Host Key') {
             steps {
                 sh '''
-                APP_HOST=$(awk 'NF && $1 !~ /^\[/' hosts.ini | head -n1 | awk '{print $1}')
+                APP_HOST=$(tail -n +2 hosts.ini | awk 'NF {print $1; exit}')
                 mkdir -p "$HOME/.ssh"
                 touch "$HOME/.ssh/known_hosts"
                 ssh-keygen -R "$APP_HOST" -f "$HOME/.ssh/known_hosts" || true
