@@ -54,6 +54,20 @@ pipeline {
             }
         }
 
+        stage('Prepare SSH Host Key') {
+            steps {
+                sh '''
+                APP_HOST=$(awk 'NF && $1 !~ /^\[/' hosts.ini | head -n1 | awk '{print $1}')
+                mkdir -p "$HOME/.ssh"
+                touch "$HOME/.ssh/known_hosts"
+                ssh-keygen -R "$APP_HOST" -f "$HOME/.ssh/known_hosts" || true
+                ssh-keyscan -H "$APP_HOST" >> "$HOME/.ssh/known_hosts"
+                chmod 700 "$HOME/.ssh"
+                chmod 600 "$HOME/.ssh/known_hosts"
+                '''
+            }
+        }
+
         stage('Deploy to App Server') {
             steps {
                 sh "ansible-playbook -i hosts.ini deploy.yml --extra-vars 'IMAGE_TAG=${IMAGE_TAG}'"
