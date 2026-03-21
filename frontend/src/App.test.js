@@ -1,8 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+beforeEach(() => {
+  global.fetch = jest.fn().mockResolvedValue({
+    json: async () => ({ posts: [] }),
+  });
+});
+
+afterEach(() => {
+  jest.clearAllMocks();
+});
+
+test('renders home page content', async () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(await screen.findByText(/ideas worth sharing\./i)).toBeInTheDocument();
 });

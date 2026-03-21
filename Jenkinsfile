@@ -19,6 +19,15 @@ pipeline {
             }
         }
 
+        stage('Run Tests') {
+            steps {
+                sh '''
+                docker run --rm -v "$PWD/frontend:/app" -w /app node:20-alpine /bin/sh -lc "npm ci && CI=true npm test -- --watchAll=false"
+                docker run --rm -v "$PWD/backend:/app" -w /app node:20-alpine /bin/sh -lc "npm ci && node --check server.js"
+                '''
+            }
+        }
+
         stage('Build Frontend Image') {
             steps {
                 sh """
