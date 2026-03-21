@@ -19,23 +19,47 @@ pipeline {
             }
         }
 
-        stage('Build Frontend Image') {
-            steps {
-                sh """
-                docker build \
-                  -t ${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG} \
-                  ./frontend
-                """
+        stage('Run Tests') {
+            parallel {
+                stage('Test Backend') {
+                    steps {
+                        dir('backend') {
+                            sh 'npm install'
+                            sh 'npm test'
+                        }
+                    }
+                }
+                stage('Test Frontend') {
+                    steps {
+                        dir('frontend') {
+                            sh 'npm ci'
+                            sh 'CI=true npm test'
+                        }
+                    }
+                }
             }
         }
 
-        stage('Build Backend Image') {
-            steps {
-                sh """
-                docker build \
-                  -t ${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG} \
-                  ./backend
-                """
+        stage('Build Images') {
+            parallel {
+                stage('Build Frontend Image') {
+                    steps {
+                        sh """
+                        docker build \
+                          -t ${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG} \
+                          ./frontend
+                        """
+                    }
+                }
+                stage('Build Backend Image') {
+                    steps {
+                        sh """
+                        docker build \
+                          -t ${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG} \
+                          ./backend
+                        """
+                    }
+                }
             }
         }
 
