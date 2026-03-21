@@ -27,7 +27,7 @@ pipeline {
                         docker run --rm \
                           -v "$WORKSPACE/backend":/app \
                           -w /app \
-                          node:18-slim \
+                          node:18-alpine \
                           sh -c "npm install && npm test"
                         '''
                     }
