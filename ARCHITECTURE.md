@@ -14,40 +14,49 @@ Delivery is automated through Jenkins running on a dedicated EC2 instance.
 ## Production Deployment Architecture
 
 ```mermaid
-graph LR
+graph TB
     Dev[Developer]
-    GitHub[GitHub Repository\nmain branch]
-    Webhook[GitHub Webhook\n/github-webhook/]
+    Terraform[Terraform]
+    GitHub[GitHub]
+    Webhook[Webhook]
 
     subgraph AWS[AWS Cloud]
-        subgraph CICD[EC2: Jenkins Server]
-            Jenkins[Jenkins Pipeline]
-            Tests[Parallel Test Stage\nBackend + Frontend]
-            BuildPush[Build + Push Stage\nDocker Hub Images]
-            Deploy[Deploy Stage\nAnsible]
+        subgraph CICD[Jenkins Server]
+            Jenkins[Jenkins]
+            subgraph Pipe[Jenkins Pipeline]
+                Tests[Test]
+                Build[Build]
+                Push[Push]
+                Deploy[Deploy]
+            end
             Creds[Jenkins Credentials\n- dockerhub-credentials\n- app-server-ssh-key\n- backend-env-file]
         end
 
-        subgraph APP[EC2: Application Server]
-            Compose[Docker Compose\nproduction stack]
-            FE[Frontend Container\nNginx :80]
-            BE[Backend Container\nNode/Express :5000]
-            Env[backend/.env]
+        subgraph APP[Application Server]
+            Compose[Docker Compose]
+            FE[Frontend]
+            BE[Backend]
+            Env[Backend Env]
         end
     end
 
     Hub[(Docker Hub)]
     Atlas[(MongoDB Atlas)]
-    User[End User Browser]
+    User[Browser]
+
+    Dev --> Terraform
+    Terraform -- provisions --> CICD
+    Terraform -- provisions --> APP
 
     Dev --> GitHub
     GitHub -- push --> Webhook
     Webhook --> Jenkins
 
     Jenkins --> Tests
-    Tests --> BuildPush
-    BuildPush --> Hub
-    BuildPush --> Deploy
+    Tests --> Build
+    Build --> Push
+    Push --> Hub
+    Push --> Deploy
     Deploy --> Compose
 
     Creds --> Jenkins
@@ -55,10 +64,10 @@ graph LR
 
     Compose --> FE
     Compose --> BE
-    Compose -- pulls images --> Hub
+    Compose --> Hub
 
-    User -- HTTP 80 --> FE
-    FE -- /api proxy --> BE
+    User --> FE
+    FE --> BE
     BE --> Atlas
     BE --> Env
 ```
