@@ -145,6 +145,7 @@ graph TD
 
         subgraph CICD_Server_EC2
             Jenkins[Jenkins Server]
+            JCreds[Jenkins Credentials\n- dockerhub-credentials\n- app-server-ssh-key\n- backend-env-file]
         end
 
         subgraph Registry
@@ -159,7 +160,7 @@ graph TD
                 Backend["Backend Container - Node/Express :5000"]
             end
 
-            EnvFile[".env File"]
+            BackendEnv["backend/.env"]
         end
 
         Database[(MongoDB Atlas)]
@@ -167,17 +168,21 @@ graph TD
 
     Dev --> GitHub
     GitHub --> Jenkins
+    Jenkins --> JCreds
 
     Jenkins -- Build & Push --> DockerHub
-    Jenkins -- SSH Deploy --> DockerCompose
+    Jenkins -- Ansible Deploy over VPC private IP --> DockerCompose
+    JCreds -- SSH private key --> Jenkins
+    JCreds -- Secret text writes --> BackendEnv
 
     DockerCompose -- Pull Images --> DockerHub
     DockerCompose -- Start --> Frontend
     DockerCompose -- Start --> Backend
 
+    LocalBrowser -- HTTP 80 --> Frontend
     Frontend --> Backend
     Backend --> Database
-    Backend --> EnvFile
+    Backend --> BackendEnv
 ```
 
 ### 1. Infrastructure Overview
@@ -265,3 +270,110 @@ Once the pipeline completes successfully, the images will be available on Docker
 
 -   **API Documentation**: See `backend/API_DOCUMENTATION.md` for details on available endpoints.
 -   **Run Instructions**: See `ReadBeforeRun.md` for specific execution details.
+-   **Full Rebuild Guide**: See `REBUILD_RUNBOOK.md` for complete recovery after deleting AWS instances (Terraform, Jenkins, credentials, SSH, env files, and redeploy).
+
+## 🧭 CI/CD Rebuild Runbook (Terraform + Jenkins)
+
+Use this checklist when Jenkins or app server is recreated.
+
+### 1. Infrastructure Source of Truth
+
+1. Provision/update infra only from `terraform/`.
+2. Verify current IPs with Terraform outputs:
+    ```bash
+    cd /mnt/e/Projects/Draftly/terraform
+    terraform output
+    ```
+3. For Jenkins -> App deployment, use app **private IP** in `hosts.ini`.
+
+### 2. Jenkins Credentials Required
+
+Add these once per fresh Jenkins instance under:
+`Manage Jenkins -> Credentials -> System -> Global credentials`
+
+1. `dockerhub-credentials`
+    - Type: `Username with password`
+    - Username: Docker Hub username
+    - Password: Docker Hub access token
+
+2. `app-server-ssh-key`
+    - Type: `SSH Username with private key`
+    - Username: `ubuntu`
+    - Private key: full private key content from `~/.ssh/id_rsa`
+    - Important: Do **not** paste `id_rsa.pub` (public key)
+
+3. `backend-env-file`
+    - Type: `Secret file`
+    - File: upload backend `.env` file
+
+### 3. What Jenkinsfile Expects
+
+`Jenkinsfile` stages are:
+
+1. Build frontend and backend Docker images.
+2. Push images to Docker Hub.
+3. Refresh SSH host fingerprint for app host (`Prepare SSH Host Key`).
+4. Run Ansible deploy using:
+    - inventory: `hosts.ini`
+    - playbook: `deploy.yml`
+    - SSH key from Jenkins credential `app-server-ssh-key`
+    - backend env content from Jenkins credential `backend-env-file`
+
+### 4. What deploy.yml Does
+
+`deploy.yml` now performs:
+
+1. Ensure `/home/ubuntu/draftly` exists on app server.
+2. Clone/update repository into `/home/ubuntu/draftly`.
+3. Create `/home/ubuntu/draftly/backend/.env` from Jenkins secret text.
+3. Create `/home/ubuntu/draftly/backend/.env` from Jenkins secret file.
+4. Run production deployment with:
+    ```bash
+    docker compose -f docker-compose.prod.yml pull
+    docker compose -f docker-compose.prod.yml up -d --force-recreate --no-build
+    ```
+
+### 5. Frontend Env Clarification
+
+For current production deployment, no separate Jenkins frontend env secret is required.
+
+Reason:
+
+1. Frontend code calls relative `/api/...` routes.
+2. Nginx in `frontend/nginx.conf` proxies `/api/` to `http://backend:5000`.
+
+About `frontend/.env`:
+
+1. It is mainly useful for local/dev React workflows.
+2. It is not required as a Jenkins secret in this production Compose design.
+
+### 6. Rebuild Steps (Fast Path)
+
+1. Apply Terraform changes:
+    ```bash
+    cd /mnt/e/Projects/Draftly/terraform
+    terraform plan
+    terraform apply
+    ```
+2. Update `hosts.ini` app host to current app private IP if app instance changed.
+3. Push latest repo changes (`Jenkinsfile`, `deploy.yml`, `hosts.ini`).
+4. Recreate Jenkins credentials listed above.
+5. Run Jenkins pipeline.
+
+### 7. Common Errors and Fixes
+
+1. `Host key verification failed`
+    - Cause: app host fingerprint changed.
+    - Fix: `Prepare SSH Host Key` stage handles this automatically.
+
+2. `No such identity ... id_rsa` or `error in libcrypto`
+    - Cause: wrong/missing SSH key credential.
+    - Fix: configure `app-server-ssh-key` with full private key (`id_rsa`), not public key.
+
+3. `No route to host`
+    - Cause: wrong app private IP in `hosts.ini`.
+    - Fix: update from `terraform output` / `terraform state show aws_instance.app_server`.
+
+4. `backend/.env not found`
+    - Cause: env file missing on app server.
+    - Fix: ensure Jenkins credential `backend-env-file` exists as Secret file.

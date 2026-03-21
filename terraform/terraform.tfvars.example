@@ -1,0 +1,19 @@
+aws_region          = "us-east-1"
+environment         = "dev"
+name_prefix         = "draftly-tf"
+
+# Lock these down to your public IP:
+allowed_ssh_cidr     = "YOUR_PUBLIC_IP/32"
+allowed_jenkins_cidr = "YOUR_PUBLIC_IP/32"
+
+# Use an existing EC2 key pair name (recommended for first run)
+create_key_pair = false
+ssh_key_name    = "draftly-key"
+
+# Or let Terraform create a key pair from your WSL public key:
+# create_key_pair      = true
+# ssh_public_key_path  = "~/.ssh/id_rsa.pub"
+
+backend_port = 5000
+jenkins_port = 8080
+
