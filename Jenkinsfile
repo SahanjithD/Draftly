@@ -7,6 +7,10 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
+    triggers {
+        githubPush()
+    }
+
     stages {
 
         stage('Clone Repository') {
