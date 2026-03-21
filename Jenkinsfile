@@ -120,9 +120,13 @@ pipeline {
             }
         }
 
-        stage('Clean Jenkins Images') {
+        stage('Clean Jenkins Docker Artifacts') {
             steps {
-                sh 'docker image prune -f'
+                sh '''
+                docker container prune -f
+                docker image prune -a -f
+                docker builder prune -a -f
+                '''
             }
         }
     }

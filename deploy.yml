@@ -55,5 +55,8 @@
       environment:
         IMAGE_TAG: "{{ IMAGE_TAG }}"
 
-    - name: Clean up dangling images
-      shell: docker image prune -f
+    - name: Clean up stopped containers
+      shell: docker container prune -f
+
+    - name: Clean up unused images
+      shell: docker image prune -a -f
