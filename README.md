@@ -139,12 +139,16 @@ graph TD
 
     subgraph Source_Control
         GitHub["GitHub Repository - main branch"]
+        GHWebhook["GitHub Webhook\n/github-webhook/"]
     end
 
     subgraph AWS_Cloud
 
         subgraph CICD_Server_EC2
             Jenkins[Jenkins Server]
+            RunTests["Pipeline Stage: Run Tests\nBackend + Frontend"]
+            BuildPush["Pipeline Stage: Build & Push Images"]
+            DeployStage["Pipeline Stage: Deploy via Ansible"]
             JCreds[Jenkins Credentials\n- dockerhub-credentials\n- app-server-ssh-key\n- backend-env-file]
         end
 
@@ -167,13 +171,17 @@ graph TD
     end
 
     Dev --> GitHub
-    GitHub --> Jenkins
+    GitHub -- Push --> GHWebhook
+    GHWebhook -- HTTP POST --> Jenkins
     Jenkins --> JCreds
+    Jenkins --> RunTests
+    RunTests --> BuildPush
+    BuildPush --> DeployStage
 
-    Jenkins -- Build & Push --> DockerHub
-    Jenkins -- Ansible Deploy over VPC private IP --> DockerCompose
+    BuildPush --> DockerHub
+    DeployStage -- Ansible Deploy over VPC private IP --> DockerCompose
     JCreds -- SSH private key --> Jenkins
-    JCreds -- Secret text writes --> BackendEnv
+    JCreds -- Secret file writes --> BackendEnv
 
     DockerCompose -- Pull Images --> DockerHub
     DockerCompose -- Start --> Frontend
@@ -199,23 +207,22 @@ ssh -i "C:\Users\ASUS\.ssh\your-key-name.pem" admin@<SERVER_PUBLIC_IP>
 ```
 
 ### 3. Deployment Server Configuration
-The deployment server is configured with a `docker-compose.yml` file located at `~/draftly/docker-compose.yml`.
+The deployment server is configured with `docker-compose.prod.yml` in the repo path:
+`/home/ubuntu/draftly/docker-compose.prod.yml`
 
 **File Content:**
 ```yaml
-version: "3.9"
-
 services:
   backend:
     image: dasund3sh4j4/draftly-backend:${IMAGE_TAG}
-    env_file: .env
+        env_file: backend/.env
     ports:
       - "5000:5000"
 
   frontend:
     image: dasund3sh4j4/draftly-frontend:${IMAGE_TAG}
     ports:
-            - "80:80"
+        - "80:80"
 ```
 *Note: The `${IMAGE_TAG}` variable is populated during the deployment process to ensure the correct version is deployed.*
 
@@ -223,10 +230,15 @@ services:
 
 The project includes a `Jenkinsfile` that defines the CI/CD pipeline. The pipeline includes stages for:
 1.  Cloning the repository.
-2.  Building Docker images for Frontend and Backend.
-3.  Pushing images to Docker Hub.
-4.  Deploying to the App Server.
-5.  Cleaning up Jenkins images.
+2.  Running tests in parallel (Backend unit tests + Frontend smoke tests) inside Docker containers.
+3.  Building Docker images for Frontend and Backend in parallel.
+4.  Pushing images to Docker Hub.
+5.  Deploying to the App Server via Ansible.
+6.  Cleaning up Jenkins images.
+
+Trigger mode:
+1. Push-based trigger only (`githubPush()` in `Jenkinsfile`).
+2. No polling fallback is enabled.
 
 ### 1. Accessing Jenkins
 Jenkins is hosted on a dedicated AWS EC2 instance.
@@ -260,6 +272,23 @@ Jenkins is hosted on a dedicated AWS EC2 instance.
     -   **ID**: `dockerhub-credentials` (This must match the ID used in the `Jenkinsfile`).
     -   **Username/Password**: Your Docker Hub login details.
 4.  **Run**: Go to the job dashboard and click **Build Now**.
+
+### 5. Enable Auto Trigger on Push (GitHub Webhook)
+
+To trigger Jenkins automatically on each push to `main`, configure a GitHub webhook:
+
+1. In GitHub repo settings, add webhook:
+    - URL: `http://<JENKINS_SERVER_PUBLIC_IP>:8080/github-webhook/`
+    - Content type: `application/json`
+    - Event: `Just the push event`
+2. Keep Jenkins reachable for webhook delivery:
+    - AWS SG for Jenkins currently allows TCP `8080` from `0.0.0.0/0`.
+3. After updating `Jenkinsfile`, run one manual build once so Jenkins reloads pipeline definition.
+4. Verify in GitHub webhook deliveries that Jenkins returns `200`.
+
+Security note:
+1. `0.0.0.0/0` on 8080 is for quick webhook setup.
+2. Prefer HTTPS reverse proxy and tighter source controls for long-term usage.
 
 ### 4. Docker Hub Artifacts
 Once the pipeline completes successfully, the images will be available on Docker Hub:
@@ -310,14 +339,15 @@ Add these once per fresh Jenkins instance under:
 
 `Jenkinsfile` stages are:
 
-1. Build frontend and backend Docker images.
-2. Push images to Docker Hub.
-3. Refresh SSH host fingerprint for app host (`Prepare SSH Host Key`).
-4. Run Ansible deploy using:
+1. Run tests in parallel (backend unit tests in `node:18-alpine`, frontend smoke tests in `node:18-alpine`).
+2. Build frontend and backend Docker images in parallel.
+3. Push images to Docker Hub.
+4. Refresh SSH host fingerprint for app host (`Prepare SSH Host Key`).
+5. Run Ansible deploy using:
     - inventory: `hosts.ini`
     - playbook: `deploy.yml`
     - SSH key from Jenkins credential `app-server-ssh-key`
-    - backend env content from Jenkins credential `backend-env-file`
+    - backend env file from Jenkins credential `backend-env-file`
 
 ### 4. What deploy.yml Does
 
@@ -325,7 +355,6 @@ Add these once per fresh Jenkins instance under:
 
 1. Ensure `/home/ubuntu/draftly` exists on app server.
 2. Clone/update repository into `/home/ubuntu/draftly`.
-3. Create `/home/ubuntu/draftly/backend/.env` from Jenkins secret text.
 3. Create `/home/ubuntu/draftly/backend/.env` from Jenkins secret file.
 4. Run production deployment with:
     ```bash

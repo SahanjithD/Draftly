@@ -83,6 +83,18 @@ Create a Pipeline job:
 3. Branch: main
 4. Script path: Jenkinsfile
 
+Trigger behavior:
+
+1. Pipeline is configured as push-triggered (`githubPush()`).
+2. SCM polling fallback is intentionally disabled.
+
+Configure GitHub webhook:
+
+1. URL: http://<jenkins_server_public_ip>:8080/github-webhook/
+2. Content-Type: application/json
+3. Event: Just the push event
+4. After changing Jenkinsfile, run one manual build once so Jenkins reloads pipeline config.
+
 ## 4) Jenkins Credentials You Must Add
 
 Add these in Jenkins global credentials.
@@ -218,6 +230,7 @@ Then:
 2. Never commit backend .env
 3. Use Docker Hub access token instead of password
 4. Restrict AWS security group CIDRs to known IPs where possible
+5. Jenkins port 8080 may be opened to `0.0.0.0/0` for webhook delivery; prefer HTTPS reverse proxy and tighter controls after validation
 
 ## 12) When Recreating Only One Server
 
