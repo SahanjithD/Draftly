@@ -22,25 +22,26 @@ pipeline {
         stage('Run Tests') {
             parallel {
                 stage('Test Backend') {
-                    agent {
-                        docker { image 'node:18-alpine' }
-                    }
                     steps {
-                        dir('backend') {
-                            sh 'npm install'
-                            sh 'npm test'
-                        }
+                        sh '''
+                        docker run --rm \
+                          -v "$WORKSPACE/backend":/app \
+                          -w /app \
+                          node:18-alpine \
+                          sh -c "npm install && npm test"
+                        '''
                     }
                 }
                 stage('Test Frontend') {
-                    agent {
-                        docker { image 'node:18-alpine' }
-                    }
                     steps {
-                        dir('frontend') {
-                            sh 'npm ci'
-                            sh 'CI=true npm test'
-                        }
+                        sh '''
+                        docker run --rm \
+                          -v "$WORKSPACE/frontend":/app \
+                          -w /app \
+                          -e CI=true \
+                          node:18-alpine \
+                          sh -c "npm ci && npm test"
+                        '''
                     }
                 }
             }
